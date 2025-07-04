@@ -12,7 +12,7 @@
  */
 
 import { redirect } from "next/navigation";
-import { countResumes } from "@/utils/actions/resumes/actions";
+// import { countResumes } from "@/utils/actions/resumes/actions";
 import {User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,15 +25,6 @@ import type { Resume } from "@/lib/types";
 import { ResumesSection } from "@/components/dashboard/resumes-section";
 import { createClient } from "@/utils/supabase/server";
 import { getDashboardData } from "@/utils/actions";
-import { checkSubscriptionPlan } from "@/utils/actions/stripe/actions";
-
-
-
-
-
-
-
-
 
 export default async function Home({
   searchParams,
@@ -100,22 +91,16 @@ export default async function Home({
   const baseResumes = sortResumes(unsortedBaseResumes, baseSort, baseDirection);
   const tailoredResumes = sortResumes(unsortedTailoredResumes, tailoredSort, tailoredDirection);
   
-  // Check if user is on Pro plan
-  const subscription = await checkSubscriptionPlan();
-  const isProPlan = subscription.plan === 'pro';
-
-  // console.log(subscription);
-  
   // Count resumes for base and tailored sections
-  const baseResumesCount = await countResumes('base');
-  const tailoredResumesCount = await countResumes('tailored');
+  // const baseResumesCount = await countResumes('base');
+  // const tailoredResumesCount = await countResumes('tailored');
   // console.log(baseResumesCount, tailoredResumesCount);
   // console.log(isProPlan);
   
 
   // Free plan limits
-  const canCreateBase = isProPlan || baseResumesCount < 2;
-  const canCreateTailored = isProPlan || tailoredResumesCount < 4;
+  // const canCreateBase = baseResumesCount < 2;
+  // const canCreateTailored = tailoredResumesCount < 4;
 
 
   // Display a friendly message if no profile exists
@@ -163,7 +148,7 @@ export default async function Home({
           {/* Profile Overview */}
           <div className="mb-6 space-y-4">
             {/* API Key Alert */}
-            { !isProPlan && <ApiKeyAlert />}
+            { false && <ApiKeyAlert />}
             
             {/* Greeting & Edit Button */}
             <div className="flex items-center justify-between">
@@ -192,7 +177,6 @@ export default async function Home({
                 directionParam="baseDirection"
                 currentSort={baseSort}
                 currentDirection={baseDirection}
-                canCreateMore={canCreateBase}
               />
 
               {/* Thin Divider */}
@@ -210,7 +194,6 @@ export default async function Home({
                 currentSort={tailoredSort}
                 currentDirection={tailoredDirection}
                 baseResumes={baseResumes}
-                canCreateMore={canCreateTailored}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { AuthDialog } from "@/components/auth/auth-dialog";
+import Image from 'next/image';
 
 export function Hero() {
   return (
@@ -15,7 +16,7 @@ export function Hero() {
             rel="noopener noreferrer"
             className="inline-block transition-transform duration-300 hover:-translate-y-1"
           >
-            <img 
+            <Image 
               src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=982199&theme=light&t=1750633039421" 
               alt="ResumeLM - Open Source AI Resume Builder for Tech Jobs | Product Hunt" 
               style={{ width: '250px', height: '54px' }}
@@ -191,4 +192,4 @@ export function Hero() {
       </div>
     </section>
   );
-} 
+}

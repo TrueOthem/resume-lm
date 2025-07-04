@@ -30,7 +30,6 @@ interface ResumesSectionProps {
   currentSort: SortOption;
   currentDirection: SortDirection;
   baseResumes?: Resume[]; // Only needed for tailored type
-  canCreateMore?: boolean;
 }
 
 interface PaginationState {
@@ -46,8 +45,7 @@ export function ResumesSection({
   directionParam,
   currentSort,
   currentDirection,
-  baseResumes = [],
-  canCreateMore
+  baseResumes = []
 }: ResumesSectionProps) {
   // Optimistic state for deletions
   const [optimisticResumes, removeOptimisticResume] = useOptimistic(
@@ -252,78 +250,6 @@ export function ResumesSection({
     </CreateResumeDialog>
   );
 
-  // Limit Reached Card Component
-  const LimitReachedCard = () => (
-    <Link 
-      href="/subscription"
-      className={cn(
-        "group/limit block",
-        "cursor-pointer",
-        "transition-all duration-500",
-        "hover:-translate-y-1",
-      )}
-    >
-      <div className={cn(
-        "aspect-[8.5/11] rounded-lg",
-        "relative overflow-hidden",
-        "border-2 border-dashed",
-        "flex flex-col items-center justify-center gap-4",
-        "border-amber-600/80",
-        "bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-amber-100/60",
-        "transition-all duration-500",
-        "hover:shadow-xl hover:shadow-amber-200/20",
-        "hover:border-amber-600/90",
-        "after:absolute after:inset-0 after:bg-gradient-to-br",
-        "after:from-amber-600/[0.03] after:to-orange-600/[0.03]",
-        "after:opacity-40 after:transition-opacity after:duration-500",
-        "hover:after:opacity-60"
-      )}>
-        <div className={cn(
-          "relative z-10 flex flex-col items-center",
-          "transform transition-all duration-500",
-          "group-hover/limit:scale-105"
-        )}>
-          <div className={cn(
-            "h-12 w-12 rounded-xl",
-            "flex items-center justify-center",
-            "bg-gradient-to-br from-amber-100 to-amber-50",
-            "text-amber-600",
-            "shadow-md",
-            "transition-all duration-500",
-            "group-hover/limit:shadow-lg",
-            "group-hover/limit:bg-gradient-to-br",
-            "group-hover/limit:from-amber-200",
-            "group-hover/limit:to-amber-100",
-            "group-hover/limit:-translate-y-1"
-          )}>
-            <config.icon className={cn(
-              "h-5 w-5",
-              "transition-all duration-500",
-              "group-hover/limit:scale-110"
-            )} />
-          </div>
-          <span className={cn(
-            "mt-4 text-sm font-medium",
-            "text-amber-600",
-            "transition-all duration-500",
-            "group-hover/limit:text-amber-700"
-          )}>
-            {type === 'base' ? 'Base' : 'Tailored'} Limit Reached
-          </span>
-          <span className={cn(
-            "mt-2 text-xs",
-            "text-amber-600/70",
-            "underline underline-offset-4",
-            "transition-all duration-300",
-            "group-hover/limit:text-amber-700/90"
-          )}>
-            Upgrade to create more
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-
   // Resume Card Component with optimistic states
   const ResumeCard = ({ resume }: { resume: OptimisticResume }) => {
     const isDeleting = deletingResumes.has(resume.id);
@@ -398,75 +324,34 @@ export function ResumesSection({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
-                
-                {/* Copy Button - Check if can create more */}
-                {canCreateMore ? (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      startTransition(() => {
-                        handleCopyResume(resume);
-                      });
-                    }}
-                    disabled={isDeleting || isCopying}
-                    className={cn(
-                      "h-8 w-8 rounded-lg",
-                      "bg-teal-50/80 hover:bg-teal-100/80",
-                      "text-teal-600 hover:text-teal-700",
-                      "border border-teal-200/60",
-                      "shadow-sm",
-                      "transition-all duration-300",
-                      "hover:scale-105 hover:shadow-md",
-                      "hover:-translate-y-0.5",
-                      (isDeleting || isCopying) && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {isCopying ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                ) : (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className={cn(
-                          "h-8 w-8 rounded-lg",
-                          "bg-amber-50/80 hover:bg-amber-100/80",
-                          "text-amber-600 hover:text-amber-700",
-                          "border border-amber-200/60",
-                          "shadow-sm",
-                          "transition-all duration-300",
-                          "hover:scale-105 hover:shadow-md",
-                          "hover:-translate-y-0.5"
-                        )}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Upgrade Required</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You&apos;ve reached the maximum number of {type} resumes allowed on the free plan. 
-                          Upgrade to Pro to create unlimited resumes and unlock additional features.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction asChild>
-                          <Link href="/subscription" className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700">
-                            Upgrade to Pro
-                          </Link>
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                {/* Always show copy button, never show upgrade dialog */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    startTransition(() => {
+                      handleCopyResume(resume);
+                    });
+                  }}
+                  disabled={isDeleting || isCopying}
+                  className={cn(
+                    "h-8 w-8 rounded-lg",
+                    "bg-teal-50/80 hover:bg-teal-100/80",
+                    "text-teal-600 hover:text-teal-700",
+                    "border border-teal-200/60",
+                    "shadow-sm",
+                    "transition-all duration-300",
+                    "hover:scale-105 hover:shadow-md",
+                    "hover:-translate-y-0.5",
+                    (isDeleting || isCopying) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isCopying ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             )}
           </div>
@@ -591,16 +476,10 @@ export function ResumesSection({
       <div className="relative pb-6">
         {/* Mobile View */}
         <div className="md:hidden w-full space-y-6">
-          {/* Mobile Create Resume Button Row */}
-          {canCreateMore ? (
-            <div className="px-2 w-full  flex">
-              <CreateResumeCard />
-            </div>
-          ) : (
-            <div className="px-4 w-full">
-              <LimitReachedCard />
-            </div>
-          )}
+          {/* Mobile Create Resume Button Row - always show */}
+          <div className="px-2 w-full  flex">
+            <CreateResumeCard />
+          </div>
 
           {/* Mobile Resumes Carousel */}
           {paginatedResumes.length > 0 && (
@@ -622,14 +501,9 @@ export function ResumesSection({
           )}
         </div>
 
-        {/* Desktop Grid View */}
+        {/* Desktop Grid View - always show create card */}
         <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {canCreateMore ? (
-            <CreateResumeCard />
-          ) : (
-            <LimitReachedCard />
-          )}
-
+          <CreateResumeCard />
           {paginatedResumes.map((resume) => (
             <ResumeCard key={resume.id} resume={resume} />
           ))}
@@ -640,4 +514,4 @@ export function ResumesSection({
       </div>
     </div>
   );
-} 
+}

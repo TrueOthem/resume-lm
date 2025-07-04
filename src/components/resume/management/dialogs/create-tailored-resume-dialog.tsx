@@ -9,8 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Plus, Brain, Copy } from "lucide-react";
 import { createTailoredResume } from "@/utils/actions/resumes/actions";
 import { CreateBaseResumeDialog } from "./create-base-resume-dialog";
-import { tailorResumeToJob } from "@/utils/actions/jobs/ai";
-import { formatJobListing } from "@/utils/actions/jobs/ai";
+import { tailorResumeToJob, formatJobListing, rephraseAndCompleteJobDescription } from "@/utils/actions/jobs/ai";
 import { createJob } from "@/utils/actions/jobs/actions";
 import { MiniResumePreview } from "../../shared/mini-resume-preview";
 import { LoadingOverlay, type CreationStep } from "../loading-overlay";
@@ -70,26 +69,66 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
       return;
     }
 
-    if (!jobDescription.trim() && importOption === 'ai') {
-      setIsJobDescriptionInvalid(true);
-      toast({
-        title: "Error",
-        description: "Please enter a job description",
-        variant: "destructive",
-      });
-      return;
+    // Sanitize and validate job description
+    const trimmedJobDescription = jobDescription.trim();
+    if (importOption === 'ai') {
+      if (!trimmedJobDescription) {
+        setIsJobDescriptionInvalid(true);
+        toast({
+          title: "Error",
+          description: "Please enter a job description",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (trimmedJobDescription.length < 30) {
+        setIsJobDescriptionInvalid(true);
+        toast({
+          title: "Job Description Too Short",
+          description: "Please provide a more detailed job description for better results.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
       setIsCreating(true);
-      setCurrentStep('analyzing');
-      
-      // Reset validation states
+      setCurrentStep('rephrasing');
       setIsBaseResumeInvalid(false);
       setIsJobDescriptionInvalid(false);
 
+      let processedJobDescription = jobDescription;
+      if (importOption === 'ai') {
+        // 1. Rephrase and complete the job description
+        try {
+          const MODEL_STORAGE_KEY = 'resumelm-default-model';
+          const LOCAL_STORAGE_KEY = 'resumelm-api-keys';
+          const selectedModel = localStorage.getItem(MODEL_STORAGE_KEY);
+          const storedKeys = localStorage.getItem(LOCAL_STORAGE_KEY);
+          let apiKeys = [];
+          try {
+            apiKeys = storedKeys ? JSON.parse(storedKeys) : [];
+          } catch (error) {
+            console.error('Error parsing API keys:', error);
+          }
+          processedJobDescription = await rephraseAndCompleteJobDescription(jobDescription, {
+            model: selectedModel || '',
+            apiKeys
+          });
+        } catch (error) {
+          setShowErrorDialog(true);
+          setIsCreating(false);
+          setErrorMessage({
+            title: "Job Description Rephrasing Error",
+            description: error instanceof Error ? error.message : "Unknown error rephrasing job description."
+          });
+          return;
+        }
+      }
+
+      setCurrentStep('analyzing');
       if (importOption === 'import-profile') {
-        // Direct copy logic
         const baseResume = baseResumes?.find(r => r.id === selectedBaseResume);
         if (!baseResume) throw new Error("Base resume not found");
 
@@ -97,57 +136,50 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
         let jobTitle = 'Copied Resume';
         let companyName = '';
 
-        if (jobDescription.trim()) {
-          // Get model and API key from local storage
+        if (trimmedJobDescription) {
           const MODEL_STORAGE_KEY = 'resumelm-default-model';
           const LOCAL_STORAGE_KEY = 'resumelm-api-keys';
-
           const selectedModel = localStorage.getItem(MODEL_STORAGE_KEY);
           const storedKeys = localStorage.getItem(LOCAL_STORAGE_KEY);
           let apiKeys = [];
-
           try {
             apiKeys = storedKeys ? JSON.parse(storedKeys) : [];
           } catch (error) {
             console.error('Error parsing API keys:', error);
           }
-
           try {
             setCurrentStep('analyzing');
-            const formattedJobListing = await formatJobListing(jobDescription, {
+            const formattedJobListing = await formatJobListing(processedJobDescription.trim(), {
               model: selectedModel || '',
               apiKeys
             });
-
+            if (!formattedJobListing || typeof formattedJobListing !== 'object') {
+              throw new Error("Job description could not be parsed. Please try a different job description.");
+            }
+            if (!formattedJobListing.position_title) {
+              formattedJobListing.position_title = "Job Title (Not Detected)";
+            }
+            if (!formattedJobListing.company_name) {
+              formattedJobListing.company_name = "Company (Not Detected)";
+            }
             setCurrentStep('formatting');
             const jobEntry = await createJob(formattedJobListing);
-            if (!jobEntry?.id) throw new Error("Failed to create job entry");
-            
-            jobId = jobEntry.id;
-            jobTitle = formattedJobListing.position_title || 'Copied Resume';
-            companyName = formattedJobListing.company_name || '';
-          } catch (error: Error | unknown) {
-            if (error instanceof Error && (
-                error.message.toLowerCase().includes('api key') || 
-                error.message.toLowerCase().includes('unauthorized') ||
-                error.message.toLowerCase().includes('invalid key'))
-            ) {
-              setErrorMessage({
-                title: "API Key Error",
-                description: "There was an issue with your API key. Please check your settings and try again."
-              });
-            } else {
-              setErrorMessage({
-                title: "Error",
-                description: "Failed to process job description. Please try again."
-              });
+            if (!jobEntry?.id) {
+              throw new Error("Failed to create job entry. Please try again.");
             }
+            jobId = jobEntry.id;
+            jobTitle = formattedJobListing.position_title;
+            companyName = formattedJobListing.company_name;
+          } catch (error: Error | unknown) {
             setShowErrorDialog(true);
             setIsCreating(false);
+            setErrorMessage({
+              title: "Job Formatting Error",
+              description: error instanceof Error ? error.message : "Unknown error formatting job description."
+            });
             return;
           }
         }
-
         const resume = await createTailoredResume(
           baseResume,
           jobId,
@@ -164,25 +196,20 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
             target_role: baseResume.target_role
           }
         );
-
         toast({
           title: "Success",
           description: "Resume created successfully",
         });
-
         router.push(`/resumes/${resume.id}`);
         setOpen(false);
         return;
       }
 
-      // Get model and API key from local storage
       const MODEL_STORAGE_KEY = 'resumelm-default-model';
       const LOCAL_STORAGE_KEY = 'resumelm-api-keys';
-
       const selectedModel = localStorage.getItem(MODEL_STORAGE_KEY);
       const storedKeys = localStorage.getItem(LOCAL_STORAGE_KEY);
       let apiKeys = [];
-
       try {
         apiKeys = storedKeys ? JSON.parse(storedKeys) : [];
       } catch (error) {
@@ -191,47 +218,42 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
       // 1. Format the job listing
       let formattedJobListing;
       try {
-        formattedJobListing = await formatJobListing(jobDescription, {
+        formattedJobListing = await formatJobListing(processedJobDescription.trim(), {
           model: selectedModel || '',
           apiKeys
         });
-      } catch (error: Error | unknown) {
-        if (error instanceof Error && (
-            error.message.toLowerCase().includes('api key') || 
-            error.message.toLowerCase().includes('unauthorized') ||
-            error.message.toLowerCase().includes('invalid key'))
-        ) {
-          setErrorMessage({
-            title: "API Key Error",
-            description: "There was an issue with your API key. Please check your settings and try again."
-          });
-        } else {
-          setErrorMessage({
-            title: "Error",
-            description: "Failed to analyze job description. Please try again."
-          });
+        if (!formattedJobListing || typeof formattedJobListing !== 'object') {
+          throw new Error("Job description could not be parsed. Please try a different job description.");
         }
+        if (!formattedJobListing.position_title) {
+          formattedJobListing.position_title = "Job Title (Not Detected)";
+        }
+        if (!formattedJobListing.company_name) {
+          formattedJobListing.company_name = "Company (Not Detected)";
+        }
+      } catch (error: Error | unknown) {
         setShowErrorDialog(true);
         setIsCreating(false);
+        setErrorMessage({
+          title: "Job Formatting Error",
+          description: error instanceof Error ? error.message : "Unknown error formatting job description."
+        });
         return;
       }
-
-      setCurrentStep('formatting');
-
-      // 2. Create job in database and get ID
       const jobEntry = await createJob(formattedJobListing);
-      if (!jobEntry?.id) throw new Error("Failed to create job entry");
-
-
-      // 3. Get the base resume object
+      if (!jobEntry?.id) {
+        setShowErrorDialog(true);
+        setIsCreating(false);
+        setErrorMessage({
+          title: "Job Creation Error",
+          description: "Failed to create job entry. Please try again."
+        });
+        return;
+      }
       const baseResume = baseResumes?.find(r => r.id === selectedBaseResume);
       if (!baseResume) throw new Error("Base resume not found");
-
       setCurrentStep('tailoring');
-
-      // 4. Tailor the resume using the formatted job listing
       let tailoredContent;
-
       try {
         tailoredContent = await tailorResumeToJob(baseResume, formattedJobListing, {
           model: selectedModel || '',
@@ -257,34 +279,45 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
         setIsCreating(false);
         return;
       }
-
-
       setCurrentStep('finalizing');
-
-      
-      // 5. Create the tailored resume with job reference
       const resume = await createTailoredResume(
         baseResume,
         jobEntry.id,
-        formattedJobListing.position_title || '',
-        formattedJobListing.company_name || '',
+        formattedJobListing.position_title,
+        formattedJobListing.company_name,
         tailoredContent,
       );
-
       toast({
         title: "Success",
         description: "Resume created successfully",
       });
-
       router.push(`/resumes/${resume.id}`);
       setOpen(false);
     } catch (error: unknown) {
-      console.error('Failed to create resume:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create resume",
-        variant: "destructive",
+      console.error('Resume creation error:', error);
+      let message = "Unknown error occurred.";
+      if (typeof error === "string") {
+        message = error;
+      } else if (error instanceof Error) {
+        message = error.message;
+      } else if (error && typeof error === "object") {
+        if ('message' in error && typeof (error as { message?: unknown }).message === 'string') {
+          message = (error as { message?: string }).message ?? '';
+        } else if ('detail' in error && typeof (error as { detail?: unknown }).detail === 'string') {
+          message = (error as { detail?: string }).detail ?? '';
+        } else if ('details' in error && typeof (error as { details?: unknown }).details === 'string') {
+          message = (error as { details?: string }).details ?? '';
+        } else {
+          message = JSON.stringify(error);
+        }
+      }
+      setShowErrorDialog(true);
+      setIsCreating(false);
+      setErrorMessage({
+        title: "Resume Creation Error",
+        description: message
       });
+      return;
     } finally {
       setIsCreating(false);
     }
@@ -604,4 +637,4 @@ export function CreateTailoredResumeDialog({ children, baseResumes, profile }: C
       />
     </>
   );
-} 
+}

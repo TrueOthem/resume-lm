@@ -6,7 +6,6 @@ import { textImportSchema, workExperienceBulletPointsSchema } from "@/lib/zod-sc
 import { generateObject } from "ai";
 import { z } from "zod";
 import { initializeAIClient, type AIConfig } from '@/utils/ai-tools';
-import { getSubscriptionPlan } from "@/utils/actions/stripe/actions";
 import { PROJECT_GENERATOR_MESSAGE, PROJECT_IMPROVER_MESSAGE, TEXT_ANALYZER_SYSTEM_MESSAGE, WORK_EXPERIENCE_GENERATOR_MESSAGE, WORK_EXPERIENCE_IMPROVER_MESSAGE } from "@/lib/prompts";
 import { projectAnalysisSchema, workExperienceItemsSchema } from "@/lib/zod-schemas";
 import { WorkExperience } from "@/lib/types";
@@ -93,9 +92,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
       customPrompt: string = '',
       config?: AIConfig
     ) { 
-      const subscriptionPlan = await getSubscriptionPlan();
-      const isPro = subscriptionPlan === 'pro';
-      const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+      const aiClient = initializeAIClient(config);
   
       const { object } = await generateObject({
         model: aiClient,
@@ -115,9 +112,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
     
       // WORK EXPERIENCE BULLET POINTS IMPROVEMENT
       export async function improveWorkExperience(point: string, customPrompt?: string, config?: AIConfig) {
-          const subscriptionPlan = await getSubscriptionPlan();
-          const isPro = subscriptionPlan === 'pro';
-          const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+          const aiClient = initializeAIClient(config);
           
           const { object } = await generateObject({
           model: aiClient,
@@ -136,9 +131,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
       // PROJECT BULLET POINTS IMPROVEMENT
       export async function improveProject(point: string, customPrompt?: string, config?: AIConfig) {
           
-          const subscriptionPlan = await getSubscriptionPlan();
-          const isPro = subscriptionPlan === 'pro';
-          const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+          const aiClient = initializeAIClient(config);
 
   
           const { object } = await generateObject({
@@ -162,9 +155,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
           customPrompt: string = '',
           config?: AIConfig
       ) {
-          const subscriptionPlan = await getSubscriptionPlan();
-          const isPro = subscriptionPlan === 'pro';
-          const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+          const aiClient = initializeAIClient(config);
           
           const { object } = await generateObject({
           model: aiClient,
@@ -203,9 +194,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
           prompt: string,
           config?: AIConfig
       ) {
-          const subscriptionPlan = await getSubscriptionPlan();
-          const isPro = subscriptionPlan === 'pro';
-          const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+          const aiClient = initializeAIClient(config);
           
           const { object } = await generateObject({
           model: aiClient,
@@ -224,9 +213,7 @@ export async function convertTextToResume(prompt: string, existingResume: Resume
       
       // ADDING TEXT CONTENT TO RESUME
       export async function addTextToResume(prompt: string, existingResume: Resume, config?: AIConfig) {
-          const subscriptionPlan = await getSubscriptionPlan();
-          const isPro = subscriptionPlan === 'pro';
-          const aiClient = isPro ? initializeAIClient(config, isPro) : initializeAIClient(config);
+          const aiClient = initializeAIClient(config);
   
           
           const { object } = await generateObject({

@@ -1,5 +1,3 @@
-
-
 // OpenAI function schema for resume parsing
 export const openAiProfileSchema = {
   name: "resume-schema",

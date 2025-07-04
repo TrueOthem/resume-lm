@@ -8,40 +8,47 @@ import { z } from "zod";
 import { JobListingParams } from "./schema";
 
 export async function createJob(jobListing: z.infer<typeof simplifiedJobSchema>) {
-  
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-  
-  if (userError || !user) {
-    throw new Error('User not authenticated');
-  }
+  if (userError || !user) throw new Error('User not authenticated');
 
+  // Robust mapping and fallback for required fields
+  // Only use fields that exist on jobListing
   const jobData = {
     user_id: user.id,
-    company_name: jobListing.company_name,
-    position_title: jobListing.position_title,
-    job_url: jobListing.job_url,
-    description: jobListing.description,
-    location: jobListing.location,
-    salary_range: jobListing.salary_range,
-    keywords: jobListing.keywords,
-    work_location: jobListing.work_location || 'in_person', 
-    employment_type: jobListing.employment_type || 'full_time', 
-    is_active: true
+    title: (jobListing as z.infer<typeof simplifiedJobSchema>).position_title || "Untitled Job",
+    company: (jobListing as z.infer<typeof simplifiedJobSchema>).company_name || "",
+    description: jobListing.description || "",
+    job_url: jobListing.job_url || "",
+    // Only include fields that exist in your DB schema
   };
 
-  const { data, error } = await supabase
-    .from('jobs')
-    .insert([jobData])
-    .select()
-    .single();
+  // Log all fields, values, and types
+  console.log('[createJob] Job data fields:', Object.entries(jobData).map(([k, v]) => [k, v, typeof v]));
 
-  if (error) {
-    console.error('[createJob] Error creating job:', error);
-    throw error;
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert([jobData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[createJob] Error creating job:', error);
+      if (typeof error === 'object' && error && 'stack' in error) {
+        console.error('[createJob] Error stack:', error.stack);
+      }
+      console.error('[createJob] Job data:', jobData);
+      throw error;
+    }
+    return data;
+  } catch (err) {
+    console.error('[createJob] Unexpected error:', err);
+    if (typeof err === 'object' && err && 'stack' in err) {
+      console.error('[createJob] Error stack:', err.stack);
+    }
+    throw err;
   }
-  
-  return data;
 }
 
 export async function deleteJob(jobId: string): Promise<void> {
@@ -177,4 +184,4 @@ export async function createEmptyJob(): Promise<Job> {
 
   revalidatePath('/', 'layout');
   return data;
-} 
+}

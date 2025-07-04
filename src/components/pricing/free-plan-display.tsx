@@ -21,7 +21,7 @@ const plans: Plan[] = [
   },
   {
     title: 'Pro',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!,
+    priceId: '',
     price: '$20',
     features: [
       'Unlimited Base Resumes',
@@ -184,4 +184,4 @@ export function FreePlanDisplay({ initialProfile }: FreePlanDisplayProps) {
       </div>
     </div>
   );
-} 
+}

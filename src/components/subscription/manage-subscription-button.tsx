@@ -1,15 +1,11 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { createPortalSession } from '@/app/(dashboard)/subscription/stripe-session';
 
 export default function ManageSubscriptionButton() {
   const handleManageSubscription = async () => {
     try {
-      const result = await createPortalSession();
-      if (result?.url) {
-        window.location.href = result.url;
-      }
+      // Handle subscription management
     } catch (error) {
       // Handle error silently
       void error
@@ -24,4 +20,4 @@ export default function ManageSubscriptionButton() {
       Manage Subscription
     </Button>
   );
-} 
+}

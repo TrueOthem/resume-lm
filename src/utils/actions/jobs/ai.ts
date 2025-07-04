@@ -9,28 +9,48 @@ import {
 import { Job, Resume } from "@/lib/types";
 import { AIConfig } from '@/utils/ai-tools';
 import { initializeAIClient } from '@/utils/ai-tools';
-import { getSubscriptionPlan } from '../stripe/actions';
 import { checkRateLimit } from '@/lib/rateLimiter';
-
 
 export async function tailorResumeToJob(
   resume: Resume, 
   jobListing: z.infer<typeof simplifiedJobSchema>,
   config?: AIConfig
 ) {
-  const { plan, id } = await getSubscriptionPlan(true);
-  const isPro = plan === 'pro';
+// Default to pro plan and mock id, remove getSubscriptionPlan and plan
+  const isPro = true;
+  const id = "mock-user-id";
   const aiClient = isPro ? initializeAIClient(config, isPro, true) : initializeAIClient(config);
 // Check rate limit
   await checkRateLimit(id);
 
 try {
+    // Defensive: Check for required fields
+    if (!resume || typeof resume !== 'object') {
+      console.error('[tailorResumeToJob] Invalid resume:', resume);
+      throw new Error('Resume data is missing or invalid.');
+    }
+    if (!jobListing || typeof jobListing !== 'object') {
+      console.error('[tailorResumeToJob] Invalid jobListing:', jobListing);
+      throw new Error('Job description data is missing or invalid.');
+    }
+
+    // Always set target_role to job title
+    const resumeForAI = {
+      ...resume,
+      target_role: jobListing.position_title || '',
+    };
+
+    // Log the inputs for debugging
+    console.log('[tailorResumeToJob] Resume:', resumeForAI);
+    console.log('[tailorResumeToJob] JobListing:', jobListing);
+    if (config) console.log('[tailorResumeToJob] AI Config:', config);
+
     const { object } = await generateObject({
       model: aiClient as LanguageModelV1, 
       schema: z.object({
-      content: simplifiedResumeSchema,
-    }),
-    system: `
+        content: simplifiedResumeSchema,
+      }),
+      system: `
 
 You are ResumeLM, an advanced AI resume transformer that specializes in optimizing technical resumes for software engineering roles using machine-learning-driven ATS strategies. Your mission is to transform the provided resume into a highly targeted, ATS-friendly document that precisely aligns with the job description.
 
@@ -64,28 +84,44 @@ You are ResumeLM, an advanced AI resume transformer that specializes in optimizi
 **Your Task:**  
 Transform the resume according to these principles, ensuring the final output is a polished, ATS-optimized document that accurately reflects the candidate's technical expertise and directly addresses the job description—without any internal annotations.
 
+IMPORTANT: Your output MUST include a field called "target_role" (string) inside the "content" object, and its value MUST be set to the job title (from the job description's "position_title" field). If "position_title" is missing, use the best available job title. Do not omit this field under any circumstances.
 
-    `,
+`,
 prompt: `
     This is the Resume:
-    ${JSON.stringify(resume, null, 2)}
+    ${JSON.stringify(resumeForAI, null, 2)}
     
     This is the Job Description:
     ${JSON.stringify(jobListing, null, 2)}
     `,
-  });
+    });
 
+    // Post-process: ensure target_role is present
+    if (!object.content.target_role || typeof object.content.target_role !== 'string') {
+      object.content.target_role = jobListing.position_title || '';
+    }
 
     return object.content satisfies z.infer<typeof simplifiedResumeSchema>;
   } catch (error) {
-    console.error('Error tailoring resume:', error);
-    throw error;
+    console.error('[tailorResumeToJob] Error tailoring resume:', error);
+    if (error && typeof error === 'object' && 'stack' in error) {
+      console.error('[tailorResumeToJob] Error stack:', error.stack);
+    }
+    // Log the inputs again for post-mortem
+    console.error('[tailorResumeToJob] Resume input:', resume);
+    console.error('[tailorResumeToJob] Job listing input:', jobListing);
+    throw new Error(
+      (error instanceof Error && error.message) ?
+        `Failed to tailor resume: ${error.message}` :
+        'Failed to tailor resume due to an unknown error.'
+    );
   }
 }
 
 export async function formatJobListing(jobListing: string, config?: AIConfig) {
-  const { plan, id } = await getSubscriptionPlan(true);
-  const isPro = plan === 'pro';
+// Default to pro plan and mock id, remove getSubscriptionPlan and plan
+  const isPro = true;
+  const id = "mock-user-id";
   const aiClient = isPro ? initializeAIClient(config, isPro, true) : initializeAIClient(config);
 // Check rate limit
   await checkRateLimit(id);
@@ -144,6 +180,48 @@ try {
     return object.content satisfies Partial<Job>;
   } catch (error) {
     console.error('Error formatting job listing:', error);
+    // Log the raw jobListing input for debugging
+    console.error('Job listing input:', jobListing);
     throw error;
+  }
+}
+
+export async function rephraseAndCompleteJobDescription(rawDescription: string, config?: AIConfig): Promise<string> {
+  
+  // Default to pro plan and mock id, remove getSubscriptionPlan and plan
+  const isPro = true;
+  const id = "mock-user-id";
+  const aiClient = isPro ? initializeAIClient(config, isPro, true) : initializeAIClient(config);
+// Check rate limit
+  await checkRateLimit(id);
+  
+  try {
+    const { object } = await generateObject({
+      model: aiClient as LanguageModelV1,
+      schema: z.object({ content: z.string() }),
+      system: `
+        You are an expert job description and resume data generator.
+        Your task is to rewrite the following job description in clear, structured English, and to fill in any missing key information with your best reasonable guess.
+        Output a concise, well-structured job description that includes ALL the following fields, as required by the downstream Zod schemas:
+        - Job Title (start with "Job Title: ...")
+        - Company Name (start with "Company: ...")
+        - Location (if available or can be inferred)
+        - Key Responsibilities (as bullet points)
+        - Key Requirements (as bullet points)
+        - Description (a paragraph summary)
+        - Salary Range (if available or can be inferred)
+        - Work Location (remote, in_person, or hybrid)
+        - Employment Type (full_time, part_time, co_op, internship, contract)
+        - Keywords (comma-separated list of important skills, technologies, or requirements)
+        - For resume tailoring, ensure the job title is also provided as the target_role field
+        If any information is missing, make a plausible guess based on context, but do NOT invent unrealistic details.
+        Your output MUST be structured so that all these fields can be extracted by a parser.
+      `,
+      prompt: rawDescription,
+    });
+    return object.content;
+  } catch (error) {
+    console.error('[rephraseAndCompleteJobDescription] Error:', error);
+    throw new Error('Failed to rephrase and complete job description.');
   }
 }

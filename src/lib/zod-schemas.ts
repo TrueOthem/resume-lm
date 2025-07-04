@@ -208,6 +208,11 @@ export const simplifiedResumeSchema = z.object({
     target_role: z.string()
   });
 
+export const simplifiedResumeContentSchema = z.object({
+  content: simplifiedResumeSchema,
+  target_role: z.string()
+});
+
 // Add type inference helper
 export type Job = {
   id?: string;
@@ -333,4 +338,4 @@ export const resumeScoreSchema = z.object({
   isTailoredResume: z.boolean().optional()
 });
 
-export type ResumeScoreMetrics = z.infer<typeof resumeScoreSchema>; 
+export type ResumeScoreMetrics = z.infer<typeof resumeScoreSchema>;

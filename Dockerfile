@@ -17,6 +17,8 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules

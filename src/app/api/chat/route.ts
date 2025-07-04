@@ -2,7 +2,6 @@ import { LanguageModelV1, ToolInvocation, smoothStream, streamText } from 'ai';
 import { Resume, Job } from '@/lib/types';
 import { initializeAIClient, type AIConfig } from '@/utils/ai-tools';
 import { tools } from '@/lib/tools';
-import { getSubscriptionPlan } from '@/utils/actions/stripe/actions';
 import { checkRateLimit } from '@/lib/rateLimiter';
 
 interface Message {
@@ -48,9 +47,9 @@ export async function POST(req: Request) {
 
     const { messages, target_role, config, job, resume }: ChatRequest = requestBody;
 
-    // Get subscription plan and user ID
-    const { plan, id } = await getSubscriptionPlan(true);
-    const isPro = plan === 'pro';
+    // Default to pro plan and mock id
+    const isPro = true;
+    const id = "mock-user-id";
 
     // Apply rate limiting only for Pro users
     if (isPro) {

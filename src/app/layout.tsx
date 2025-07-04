@@ -4,7 +4,6 @@ import { Toaster } from "sonner";
 import { Footer } from "@/components/layout/footer";
 import { AppHeader } from "@/components/layout/app-header";
 import { createClient } from "@/utils/supabase/server";
-import { getSubscriptionStatus } from '@/utils/actions/stripe/actions';
 import { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react"
 
@@ -78,20 +77,15 @@ export default async function RootLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
+  // Default to pro plan for upgrade button logic
   let showUpgradeButton = false;
-  let isProPlan = false;
+  let isProPlan = true;
   if (user) {
     try {
-      const profile = await getSubscriptionStatus();
-      const isPro = profile?.subscription_plan?.toLowerCase()?.includes('pro') && 
-                    profile?.subscription_status !== 'canceled';
-      isProPlan = isPro || false;
-      // Show upgrade button only if user is not on pro plan or has canceled
-      showUpgradeButton = !isPro;
+      showUpgradeButton = !isProPlan;
     } catch {
-      // If there's an error, we'll show the upgrade button by default
       showUpgradeButton = true;
-      isProPlan = false;
+      isProPlan = true;
     }
   }
 

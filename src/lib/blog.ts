@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import matter from 'gray-matter';
 
 export interface BlogFrontMatter {
@@ -41,4 +40,4 @@ export function getAllPosts(): BlogPost[] {
   return getPostSlugs()
     .map((slug) => getPostBySlug(slug))
     .sort((a, b) => new Date(b.frontMatter.date).getTime() - new Date(a.frontMatter.date).getTime());
-} 
+}

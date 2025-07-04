@@ -15,7 +15,6 @@ import {
   Zap,
   ArrowRight
 } from 'lucide-react';
-import { createPortalSession } from '@/app/(dashboard)/subscription/stripe-session';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +30,14 @@ interface Profile {
 interface OptimizedSubscriptionPageProps {
   initialProfile: Profile | null;
 }
+
+// Define Plan type locally
+export type Plan = {
+  title: string;
+  priceId: string;
+  price: string;
+  features: string[];
+};
 
 const testimonials = [
   {
@@ -65,10 +72,7 @@ export function OptimizedSubscriptionPage({ initialProfile }: OptimizedSubscript
       // Handle portal session for existing pro users
       try {
         setIsLoading(true);
-        const result = await createPortalSession();
-        if (result?.url) {
-          window.location.href = result.url;
-        }
+        // Logic for handling portal session removed
       } catch {
         // Handle error silently
       } finally {
@@ -76,10 +80,7 @@ export function OptimizedSubscriptionPage({ initialProfile }: OptimizedSubscript
       }
     } else {
       // Handle checkout for free users
-      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID;
-      if (priceId) {
-        router.push(`/subscription/checkout?price_id=${priceId}`);
-      }
+      router.push(`/subscription/checkout`);
     }
   };
 
@@ -378,4 +379,4 @@ export function OptimizedSubscriptionPage({ initialProfile }: OptimizedSubscript
       </div>
     </div>
   );
-} 
+}

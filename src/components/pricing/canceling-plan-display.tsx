@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, Clock, ArrowDownToLine, Lock } from 'lucide-react';
-import { createPortalSession } from '@/app/(dashboard)/subscription/stripe-session';
 import { PricingCard, type Plan } from './pricing-card';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -47,22 +46,8 @@ interface CancelingPlanDisplayProps {
 }
 
 export function CancelingPlanDisplay({ initialProfile }: CancelingPlanDisplayProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const subscriptionPlan = initialProfile?.subscription_plan?.toLowerCase() || 'free';
-
-  const handlePortalSession = async () => {
-    try {
-      setIsLoading(true);
-      const result = await createPortalSession();
-      if (result?.url) {
-        window.location.href = result.url;
-      }
-    } catch {
-      // Handle error silently
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Format the end date
   const endDate = initialProfile?.current_period_end 
@@ -189,7 +174,7 @@ export function CancelingPlanDisplay({ initialProfile }: CancelingPlanDisplayPro
               plan={plan}
               isCurrentPlan={plan.title.toLowerCase() === subscriptionPlan}
               isLoading={isLoading}
-              onAction={handlePortalSession}
+              onAction={async () => {}}
               buttonText={plan.title.toLowerCase() === subscriptionPlan ? 'Manage Subscription' : undefined}
               variant="canceling"
               className={cn(
@@ -206,4 +191,4 @@ export function CancelingPlanDisplay({ initialProfile }: CancelingPlanDisplayPro
       </div>
     </div>
   );
-} 
+}

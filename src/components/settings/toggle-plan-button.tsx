@@ -1,27 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSubscriptionPlan, toggleSubscriptionPlan } from '@/utils/actions/stripe/actions';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 export function TogglePlanButton() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(true);
 
   useEffect(() => {
     const checkProStatus = async () => {
-      const plan = await getSubscriptionPlan()
-      setIsPro(plan === 'pro')
-    }
-    checkProStatus()
-  }, [])
+      // Simulate fetching subscription plan
+      setIsPro(true); // Default to pro
+    };
+    checkProStatus();
+  }, []);
 
   const handleToggle = async () => {
     setIsLoading(true);
     try {
-      const newPlan = await toggleSubscriptionPlan(isPro ? 'free' : 'pro');
-      setIsPro(newPlan === 'pro');
+      setIsPro((prev) => !prev);
     } finally {
       setIsLoading(false);
     }
@@ -41,4 +39,4 @@ export function TogglePlanButton() {
       )}
     </Button>
   );
-} 
+}

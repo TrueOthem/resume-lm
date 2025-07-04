@@ -5,20 +5,24 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, Star, Clock, Zap, ArrowRight, Crown, Shield, Check, Users, TrendingUp } from "lucide-react"
 import { cn } from '@/lib/utils';
-import { createPortalSession } from '@/app/(dashboard)/subscription/stripe-session';
-import { getSubscriptionStatus } from '@/utils/actions/stripe/actions';
 
 interface Profile {
   subscription_plan: string | null;
   subscription_status: string | null;
   current_period_end: string | null;
   trial_end: string | null;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
+}
+
+export function getSubscriptionStatus() {
+  return Promise.resolve({
+    subscription_plan: 'pro',
+    subscription_status: 'active',
+    current_period_end: null,
+    trial_end: null
+  });
 }
 
 export function SubscriptionSection() {
-  const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
@@ -43,21 +47,6 @@ export function SubscriptionSection() {
   
   const isPro = subscription_plan?.toLowerCase() === 'pro';
   const isCanceling = subscription_status === 'canceled';
-
-  const handlePortalSession = async () => {
-    try {
-      setIsLoading(true);
-      const result = await createPortalSession();
-      if (result?.url) {
-        window.location.href = result.url;
-      }
-    } catch (error) {
-      // Handle error silently
-      void error
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Calculate days remaining for canceling plan
   const daysRemaining = current_period_end
@@ -270,8 +259,7 @@ export function SubscriptionSection() {
 
             {/* CTA Button */}
             <Button
-              onClick={handlePortalSession}
-              disabled={isLoading}
+              disabled={isLoadingProfile}
               className={cn(
                 "w-full py-3 font-semibold rounded-lg transition-all duration-300",
                 isPro
@@ -279,7 +267,7 @@ export function SubscriptionSection() {
                   : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
               )}
             >
-              {isLoading ? (
+              {isLoadingProfile ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   <span>Loading...</span>
@@ -310,7 +298,6 @@ export function SubscriptionSection() {
                   Reactivate now and get 2 months for the price of 1
                 </p>
                 <Button
-                  onClick={handlePortalSession}
                   className="bg-amber-600 hover:bg-amber-700 text-white text-sm py-2 px-4"
                 >
                   Reactivate & Save 50%
@@ -322,4 +309,4 @@ export function SubscriptionSection() {
       </div>
     </div>
   );
-} 
+}

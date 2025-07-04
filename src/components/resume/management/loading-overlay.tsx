@@ -7,6 +7,7 @@ import { LoadingDots } from "@/components/ui/loading-dots";
 
 // Define the creation steps
 export const CREATION_STEPS = [
+  { id: 'rephrasing', label: 'Rephrasing Job Description' },
   { id: 'analyzing', label: 'Analyzing Job Description' },
   { id: 'formatting', label: 'Formatting Requirements' },
   { id: 'tailoring', label: 'Tailoring Resume Content' },
@@ -74,6 +75,7 @@ export function LoadingOverlay({ currentStep }: LoadingOverlayProps) {
         {/* Current action description */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground animate-pulse">
+            {currentStep === 'rephrasing' && "Rephrasing the job description..."}
             {currentStep === 'analyzing' && "Reading and understanding the job requirements..."}
             {currentStep === 'formatting' && "Structuring the job information..."}
             {currentStep === 'tailoring' && "Optimizing your resume for the best match..."}
@@ -83,4 +85,4 @@ export function LoadingOverlay({ currentStep }: LoadingOverlayProps) {
       </div>
     </div>
   );
-} 
+}

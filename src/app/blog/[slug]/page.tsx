@@ -2,7 +2,6 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getAllPosts, getPostBySlug } from "@/lib/blog";
-import { mdxComponents } from "@/components/blog/mdx-components";
 import { Calendar, ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 
@@ -84,7 +83,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const { content } = await compileMDX<{ title: string }>({
     source: post.content,
-    components: mdxComponents,
   });
 
   // Calculate reading time (rough estimate)
@@ -242,4 +240,4 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </div>
     </main>
   );
-} 
+}

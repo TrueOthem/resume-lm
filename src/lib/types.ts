@@ -147,14 +147,13 @@ export interface Profile {
 
 export interface Subscription {
   user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  subscription_plan: 'free' | 'pro';
-  subscription_status: 'active' | 'canceled';
-  current_period_end: string | null;
-  trial_end: string | null;
-  created_at: string;
-  updated_at: string;
+  subscription_plan?: string;
+  subscription_status?: string;
+  current_period_end?: string;
+  trial_end?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
 }
 
 export const AI_PROVIDERS = {

@@ -1,7 +1,7 @@
 'use client';
 
 import { Resume } from "@/lib/types";
-import { Document as PDFDocument, Page as PDFPage, Text, View, StyleSheet, Link, Image } from '@react-pdf/renderer';
+import { Document as PDFDocument, Page as PDFPage, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
 import { memo, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
@@ -311,8 +311,7 @@ function createResumeStyles(settings: Resume['document_settings'] = {
   education_margin_top: 2,
   education_margin_bottom: 2,
   education_margin_horizontal: 0,
-  education_item_spacing: 4,
-  footer_width: 80,
+  education_item_spacing: 4
 }) {
   const {
     document_font_size = 10,
@@ -336,8 +335,7 @@ function createResumeStyles(settings: Resume['document_settings'] = {
     education_margin_top = 2,
     education_margin_bottom = 2,
     education_margin_horizontal = 0,
-    education_item_spacing = 4,
-    footer_width = 95,
+    education_item_spacing = 4
   } = settings;
 
   return StyleSheet.create({
@@ -538,20 +536,6 @@ function createResumeStyles(settings: Resume['document_settings'] = {
       fontSize: document_font_size,
       color: '#111827',
     },
-    footer: {
-      position: 'absolute',
-      bottom: 20,
-      left: 0,
-      right: 0,
-      height: 'auto',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    footerImage: {
-      width: `${footer_width}%`,
-      height: 'auto',
-    },
   });
 }
 
@@ -572,15 +556,6 @@ export const ResumePDFDocument = memo(function ResumePDFDocument({ resume }: Res
         <ExperienceSection experiences={resume.work_experience} styles={styles} />
         <ProjectsSection projects={resume.projects} styles={styles} />
         <EducationSection education={resume.education} styles={styles} />
-        
-        {resume.document_settings?.show_ubc_footer && (
-          <View style={styles.footer}>
-            <Image 
-              src="/images/ubc-science-footer.png"
-              style={styles.footerImage}
-            />
-          </View>
-        )}
       </PDFPage>
     </PDFDocument>
   );
@@ -590,4 +565,4 @@ export const ResumePDFDocument = memo(function ResumePDFDocument({ resume }: Res
     prevProps.resume === nextProps.resume &&
     prevProps.variant === nextProps.variant
   );
-}); 
+});

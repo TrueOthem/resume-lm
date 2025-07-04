@@ -1,6 +1,4 @@
-
 import { OptimizedSubscriptionPage } from '@/components/pricing/optimized-subscription-page';
-import { getSubscriptionStatus} from '@/utils/actions/stripe/actions';
 
 interface Profile {
   subscription_plan: string | null;
@@ -12,13 +10,7 @@ interface Profile {
 }
 
 export default async function PlansPage() {
-  let profile: Profile | null = null;
-  try {
-    profile = await getSubscriptionStatus();
-  } catch (error) {
-    // User is not authenticated or other error occurred
-    console.error('Error fetching subscription status:', error);
-  }
+  const profile: Profile | null = null;
 
   return <OptimizedSubscriptionPage initialProfile={profile} />;
 }

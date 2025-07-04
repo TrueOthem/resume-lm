@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Sparkles, Star, Trophy } from 'lucide-react';
-import { createPortalSession } from '@/app/(dashboard)/subscription/stripe-session';
 import { PricingCard, type Plan } from './pricing-card';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -47,22 +46,8 @@ interface ProPlanDisplayProps {
 }
 
 export function ProPlanDisplay({ initialProfile }: ProPlanDisplayProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const subscriptionPlan = initialProfile?.subscription_plan?.toLowerCase() || 'free';
-
-  const handlePortalSession = async () => {
-    try {
-      setIsLoading(true);
-      const result = await createPortalSession();
-      if (result?.url) {
-        window.location.href = result.url;
-      }
-    } catch {
-      // Handle error silently
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-16 relative">
@@ -176,7 +161,6 @@ export function ProPlanDisplay({ initialProfile }: ProPlanDisplayProps) {
               plan={plan}
               isCurrentPlan={plan.title.toLowerCase() === subscriptionPlan}
               isLoading={isLoading}
-              onAction={handlePortalSession}
               buttonText={plan.title.toLowerCase() === subscriptionPlan ? 'Manage Subscription' : undefined}
               variant="pro"
               className={cn(
@@ -187,10 +171,11 @@ export function ProPlanDisplay({ initialProfile }: ProPlanDisplayProps) {
                   "transition-all duration-500"
                 ]
               )}
+              onAction={async () => {}}
             />
           </motion.div>
         ))}
       </div>
     </div>
   );
-} 
+}
